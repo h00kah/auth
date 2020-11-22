@@ -10,12 +10,14 @@ import sys
 from logging import Formatter, FileHandler
 from .forms import *
 from .config import config
-from .placeholders import init
+from .placeholders import placeholders
+from .api import api
 
 app = flask.Flask(__name__)
 app.config.update(config())
 
-init(app)
+placeholders(app)
+api(app)
 
 #db = SQLAlchemy(app)
 

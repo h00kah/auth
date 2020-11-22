@@ -2,7 +2,7 @@ import flask
 
 from .forms import *
 
-def init(app: flask.Flask):
+def placeholders(app: flask.Flask):
     @app.route('/')
     def home():
         return flask.render_template('pages/placeholder.home.html')
