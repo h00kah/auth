@@ -1,4 +1,5 @@
 from gevent import monkey
+from werkzeug.utils import HTMLBuilder
 monkey.patch_all()
 
 import flask
@@ -41,15 +42,28 @@ def login_required(test):
     return wrap
 '''
 
-@app.errorhandler(500)
+@app.errorhandler(Exception)
 def internal_error(error):
+    from werkzeug.exceptions import HTTPException
     #db_session.rollback()
-    return flask.render_template('errors/500.html'), 500
+
+    if isinstance(error, HTTPException):
+        return error
+    import traceback, sys
+
+    tb = traceback.format_exc(4)
+    app.logger.error(tb)
+    return {
+        "status": "error",
+        "error": str(error),
+        # TODO: this is not secure! Used for debug and should be removed at release
+        "trace": tb,
+    }, 500
 
 
 @app.errorhandler(404)
 def not_found_error(error):
-    return flask.render_template('errors/404.html'), 404
+    return {"status": "error", "error": "wrong route"}, 404
 
 
 if __name__ == '__main__':
@@ -58,6 +72,6 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=port)
     else:
         from gevent.pywsgi import WSGIServer
-
-        http_server = WSGIServer(('0.0.0.0', int(os.environ['PORT_APP'])), app)
+        port = os.environ.get('PORT_APP', 5000)
+        http_server = WSGIServer(('0.0.0.0', int(port)), app)
         http_server.serve_forever()
