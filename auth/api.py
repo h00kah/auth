@@ -3,8 +3,9 @@ import flask
 import bcrypt
 import hashlib
 import base64
+import json
 
-users = {}
+from .models import *
 
 class WrongUserScheme(Exception):
     pass
@@ -15,44 +16,50 @@ class UserExists(Exception):
 class UserNotExists(Exception):
     pass
 
+
 def getUser(email):
-    if email not in users:
+    user = User.get(email)
+
+    if user is None:
         raise UserNotExists()
 
-    user = users[email].copy()
+    user = user._asdict()
     del user["pwhash"]
 
     return user
 
 def createUser(email, username, pswd):
     salt = bcrypt.gensalt()
-    user = {
-        "email":    email,
-        "username": username,
-        "pwsalt":   base64.b64encode(salt).decode("ascii"),
-        "pwhash":   bcrypt.hashpw(pswd.encode(), salt),
-        "hash":     hashlib.sha1(email.encode()).hexdigest()[:4],
-    }
-    users[email] = user
+
+    user = User(
+        email=email,
+        username=username,
+        pwsalt=base64.b64encode(salt).decode("ascii"),
+        pwhash=bcrypt.hashpw(pswd.encode(), salt),
+        hash=hashlib.sha1(email.encode()).hexdigest()[:4])
+    
+    db_session.add(user)
+    db_session.commit()
+    
 
     return getUser(email)
 
 
 def updateUser(email, username=None, pswd=None):
-    if email not in users:
+    user = User.get(email)
+
+    if user is None:
         raise UserNotExists()
 
     if username is not None:
-        users[email]["username"] = username
+        user.username = username
 
     if pswd is not None:
         salt = bcrypt.gensalt()
-        users[email].update({
-            "email":  email,
-            "pwsalt": base64.b64encode(salt).decode("ascii"),
-            "pwhash": bcrypt.hashpw(pswd.encode(), salt),
-            "hash":   hashlib.sha1(email.encode()).hexdigest()[:4],
-        })
+        user.email =  email,
+        user.pwsalt = base64.b64encode(salt).decode("ascii"),
+        user.pwhash = bcrypt.hashpw(pswd.encode(), salt),
+        user.hash = hashlib.sha1(email.encode()).hexdigest()[:4],
 
     return getUser(email)
 
@@ -73,6 +80,7 @@ def reraise(fn_or_exc):
     if isinstance(fn_or_exc, type):
         return wraps
     return wraps(fn_or_exc)
+
 
 def api(app: flask.Flask):
     @app.route("/api/v1/")
@@ -109,6 +117,7 @@ def api(app: flask.Flask):
 
     @app.route("/api/v1/manage/user/<email>", methods=["DELETE"])
     def delete_user(email):
-        user = getUser(email)
-        del users[email]
-        return {"status": "ok", "user": user}
+        user = User.get(email)
+        udict = user._asdict()
+        db_session.delete(user)
+        return {"status": "ok", "user": udict}

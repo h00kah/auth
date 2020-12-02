@@ -12,5 +12,5 @@ def config():
     SECRET_KEY = 'you will never guess my secret'
 
     # Connect to the database
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'database.db')
+    SQLALCHEMY_DATABASE_URI = 'postgresql:///hookah:529da69ff09daa2f@rc1a-59envrkjvbqtj71y.mdb.yandexcloud.net:6432/hookah'
     return locals()
