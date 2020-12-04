@@ -12,15 +12,14 @@ from logging import Formatter, FileHandler
 from .forms import *
 from .config import config
 from .placeholders import placeholders
-from .api import api
+
 
 app = flask.Flask(__name__)
 app.config.update(config())
 
 placeholders(app)
-api(app)
 
-#db = SQLAlchemy(app)
+db = SQLAlchemy(app)
 
 # Automatically tear down SQLAlchemy.
 '''
