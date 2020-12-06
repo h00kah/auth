@@ -6,6 +6,7 @@ import base64
 import json
 
 from .models import *
+from .app import app, db_session
 
 class WrongUserScheme(Exception):
     pass
@@ -18,13 +19,12 @@ class UserNotExists(Exception):
 
 
 def getUser(email):
-    user = User.get(email)
+    user = User.query.get(email)
 
     if user is None:
         raise UserNotExists()
 
-    user = user._asdict()
-    del user["pwhash"]
+    user = user.asdict()
 
     return user
 
@@ -46,7 +46,7 @@ def createUser(email, username, pswd):
 
 
 def updateUser(email, username=None, pswd=None):
-    user = User.get(email)
+    user = User.query.get(email)
 
     if user is None:
         raise UserNotExists()
@@ -60,6 +60,8 @@ def updateUser(email, username=None, pswd=None):
         user.pwsalt = base64.b64encode(salt).decode("ascii"),
         user.pwhash = bcrypt.hashpw(pswd.encode(), salt),
         user.hash = hashlib.sha1(email.encode()).hexdigest()[:4],
+
+    db_session.commit()
 
     return getUser(email)
 
@@ -82,41 +84,43 @@ def reraise(fn_or_exc):
     return wraps(fn_or_exc)
 
 
-@app.route("/api/v1/")
-def index():
-    return {"status": "ok", "map": app.url_map}
+def apiinit(app):
+    @app.route("/api/v1/")
+    def index():
+        return {"status": "ok", "map": app.url_map}
 
-@app.route("/api/v1/oauth", methods=["GET"])
-def oauth_get():
-    raise NotImplementedError()
+    @app.route("/api/v1/oauth", methods=["GET"])
+    def oauth_get():
+        raise NotImplementedError()
 
-@app.route("/api/v1/oauth", methods=["POST"])
-def oauth_post():
-    raise NotImplementedError()
+    @app.route("/api/v1/oauth", methods=["POST"])
+    def oauth_post():
+        raise NotImplementedError()
 
-@app.route("/api/v1/manage/user/<email>")
-def user_get(email):
-    return {"status": "ok", "map": getUser(email)}
+    @app.route("/api/v1/manage/user/<email>")
+    def user_get(email):
+        return {"status": "ok", "map": getUser(email)}
 
-@app.route("/api/v1/manage/user", methods=["POST"])
-@reraise(WrongUserScheme)
-def create_user():
-    return {
-        "status": "ok",
-        "user": createUser(**flask.request.form)
-    }
+    @app.route("/api/v1/manage/user", methods=["POST"])
+    @reraise(WrongUserScheme)
+    def create_user():
+        return {
+            "status": "ok",
+            "user": createUser(**flask.request.form)
+        }
 
-@app.route("/api/v1/manage/user/<email>", methods=["POST"])
-@reraise(WrongUserScheme)
-def update_user(email):
-    return {
-        "status": "ok",
-        "user": updateUser(**flask.request.form)
-    }
+    @app.route("/api/v1/manage/user/<email>", methods=["POST"])
+    @reraise(WrongUserScheme)
+    def update_user(email):
+        return {
+            "status": "ok",
+            "user": updateUser(**flask.request.form)
+        }
 
-@app.route("/api/v1/manage/user/<email>", methods=["DELETE"])
-def delete_user(email):
-    user = User.get(email)
-    udict = user._asdict()
-    db_session.delete(user)
-    return {"status": "ok", "user": udict}
+    @app.route("/api/v1/manage/user/<email>", methods=["DELETE"])
+    def delete_user(email):
+        user = User.query.get(email)
+        udict = user.asdict()
+        db_session.delete(user)
+        db_session.commit()
+        return {"status": "ok", "user": udict}

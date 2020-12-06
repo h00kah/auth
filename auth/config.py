@@ -13,4 +13,6 @@ def config():
 
     # Connect to the database
     SQLALCHEMY_DATABASE_URI = 'postgresql:///hookah:529da69ff09daa2f@rc1a-59envrkjvbqtj71y.mdb.yandexcloud.net:6432/hookah'
+    SQLALCHEMY_DATABASE_URI = 'sqlite://'
+    
     return locals()
