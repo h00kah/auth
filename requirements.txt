@@ -5,3 +5,4 @@ WTForms
 coverage
 gevent
 psycopg2
+loguru

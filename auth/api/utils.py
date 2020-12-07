@@ -5,18 +5,10 @@ import hashlib
 import base64
 import json
 
-from .models import *
-from .app import app, db_session
+from auth.models import *
+from auth.app import app, db_session
 
-class WrongUserScheme(Exception):
-    pass
-
-class UserExists(Exception):
-    pass
-
-class UserNotExists(Exception):
-    pass
-
+from .errors import *
 
 def getUser(email):
     user = User.query.get(email)
@@ -82,45 +74,3 @@ def reraise(fn_or_exc):
     if isinstance(fn_or_exc, type):
         return wraps
     return wraps(fn_or_exc)
-
-
-def apiinit(app):
-    @app.route("/api/v1/")
-    def index():
-        return {"status": "ok", "map": app.url_map}
-
-    @app.route("/api/v1/oauth", methods=["GET"])
-    def oauth_get():
-        raise NotImplementedError()
-
-    @app.route("/api/v1/oauth", methods=["POST"])
-    def oauth_post():
-        raise NotImplementedError()
-
-    @app.route("/api/v1/manage/user/<email>")
-    def user_get(email):
-        return {"status": "ok", "map": getUser(email)}
-
-    @app.route("/api/v1/manage/user", methods=["POST"])
-    @reraise(WrongUserScheme)
-    def create_user():
-        return {
-            "status": "ok",
-            "user": createUser(**flask.request.form)
-        }
-
-    @app.route("/api/v1/manage/user/<email>", methods=["POST"])
-    @reraise(WrongUserScheme)
-    def update_user(email):
-        return {
-            "status": "ok",
-            "user": updateUser(**flask.request.form)
-        }
-
-    @app.route("/api/v1/manage/user/<email>", methods=["DELETE"])
-    def delete_user(email):
-        user = User.query.get(email)
-        udict = user.asdict()
-        db_session.delete(user)
-        db_session.commit()
-        return {"status": "ok", "user": udict}

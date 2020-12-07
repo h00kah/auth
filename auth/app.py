@@ -3,47 +3,48 @@ from werkzeug.utils import HTMLBuilder
 monkey.patch_all()
 
 import flask
-from flask_sqlalchemy import SQLAlchemy
-import logging
+import functools
 import os
 import sys
 
+from flask_sqlalchemy import SQLAlchemy
 from logging import Formatter, FileHandler
+
+from loguru import logger
+
 from .forms import *
 from .config import config
-from .placeholders import placeholders
 
 app = flask.Flask(__name__)
 app.config.update(config())
-
-placeholders(app)
-
 db = SQLAlchemy(app)
 
 from .models import *
+
+
+from .placeholders import placeholdersinit
+placeholdersinit(app)
 
 from .api import apiinit
 apiinit(app)
 
 # Automatically tear down SQLAlchemy.
-'''
 @app.teardown_request
 def shutdown_session(exception=None):
     db_session.remove()
-'''
+
 
 # Login required decorator.
-'''
 def login_required(test):
-    @wraps(test)
+    @functools.wraps(test)
     def wrap(*args, **kwargs):
-        if 'logged_in' in session:
+        if 'logged_in' in flask.session:
             return test(*args, **kwargs)
         else:
-            flash('You need to login first.')
-            return redirect(url_for('login'))
+            flask.flash('You need to login first.')
+            return flask.redirect(flask.url_for('login'))
     return wrap
-'''
+
 
 @app.errorhandler(Exception)
 def internal_error(error):
@@ -76,5 +77,5 @@ def run():
     else:
         from gevent.pywsgi import WSGIServer
         port = os.environ.get('PORT_APP', 5000)
-        http_server = WSGIServer(('0.0.0.0', int(port)), app)
+        http_server = WSGIServer(('0.0.0.0', int(port)), app, log=logger)
         http_server.serve_forever()

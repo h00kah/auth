@@ -4,7 +4,6 @@ from sqlalchemy.ext.declarative import declarative_base
 # from sqlalchemy import Column, Integer, String, LargeBinary
 import psycopg2
 
-from sqlalchemy.pool import StaticPool
 
 from .app import app, db
 
@@ -12,10 +11,8 @@ from .app import app, db
 Base = declarative_base()
 
 engine = create_engine(
-    app.config["SQLALCHEMY_DATABASE_URI"],
-    echo=True,
-    connect_args={"check_same_thread": False}, 
-    poolclass=StaticPool)
+      app.config["SQLALCHEMY_DATABASE_URI"],
+    **app.config["SQLALCHEMY_DATABASE_KWA"])
 
 db_session = scoped_session(sessionmaker(autocommit=False,
                                         autoflush=False,
@@ -48,20 +45,17 @@ class User(Base):
 
     username = db.Column(db.String(120), unique=True)
     email = db.Column(db.String(120), primary_key=True)
-    password = db.Column(db.String(30))
     pwsalt = db.Column(db.String(128))
     pwhash = db.Column(db.LargeBinary(128))
     hash = db.Column(db.String(4))
 
     def __init__(self, username=None,
                        email=None,
-                       password=None,
                        pwsalt=None,
                        pwhash=None,
                        hash=None):
         self.username = username
         self.email = email
-        self.password = password
         self.pwsalt = pwsalt
         self.pwhash = pwhash
         self.hash = hash
@@ -70,7 +64,6 @@ class User(Base):
         dict = object_to_dict(self)
         del dict["pwhash"]
         del dict["pwsalt"]
-        # dict["hash"] = dict["hash"].hex()
         return dict
 
 Base.metadata.create_all(bind=engine)
