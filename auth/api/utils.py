@@ -1,12 +1,9 @@
-from bcrypt import gensalt
-import flask
 import bcrypt
 import hashlib
 import base64
-import json
 
 from auth.models import *
-from auth.app import app, db_session
+from auth.app import db_session
 
 from .errors import *
 

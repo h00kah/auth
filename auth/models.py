@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 # from sqlalchemy import Column, Integer, String, LargeBinary
-import psycopg2
+import bcrypt
 
 
 from .app import app, db
@@ -65,5 +65,8 @@ class User(Base):
         del dict["pwhash"]
         del dict["pwsalt"]
         return dict
+
+    def validate(self, pswd):
+        bcrypt.checkpw(pswd.decode(), self.pwhash)
 
 Base.metadata.create_all(bind=engine)

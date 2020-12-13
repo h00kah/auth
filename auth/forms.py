@@ -23,7 +23,7 @@ class RegisterForm(Form):
 
 
 class LoginForm(Form):
-    name = TextField('Username', [DataRequired()])
+    email = TextField('E-Mail', [DataRequired()])
     password = PasswordField('Password', [DataRequired()])
 
 

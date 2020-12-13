@@ -28,6 +28,9 @@ placeholdersinit(app)
 from .api import apiinit
 apiinit(app)
 
+from .front import frontinit
+frontinit(app)
+
 # Automatically tear down SQLAlchemy.
 @app.teardown_request
 def shutdown_session(exception=None):
